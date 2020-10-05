@@ -8,7 +8,7 @@ class VersionMessage extends Message {
     services = 13n,
     nonce = getNonce(),
     timestamp = Math.floor(Date.now() / 1000),
-    subversion = `/qtuminfo:${packageInfo.version}/`,
+    subversion = `/sicashinfo:${packageInfo.version}/`,
     startHeight = 0,
     relay = true,
     ...options

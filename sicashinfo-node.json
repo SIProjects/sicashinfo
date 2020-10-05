@@ -14,7 +14,7 @@
   "servicesConfig": {
     "db": {
       "mysql": {
-        "uri": "mysql://qtum@localhost/qtum_mainnet"
+        "uri": "mysql://sicash@localhost/sicash_mainnet"
       },
       "rpc": {
         "protocol": "http",

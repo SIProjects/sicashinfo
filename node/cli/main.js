@@ -2,15 +2,15 @@ const path = require('path')
 const Liftoff = require('liftoff')
 const program = require('commander')
 const packageJson = require('../../package.json')
-const QtumNode = require('./node')
+const SICashNode = require('./node')
 
 process.on('unhandledRejection', reason => console.error(reason))
 
 let liftoff = new Liftoff({
-  name: 'qtuminfo',
-  moduleName: 'qtuminfo-node',
-  configName: 'qtuminfo-node',
-  processTitle: 'qtuminfo'
+  name: 'sicashinfo',
+  moduleName: 'sicashinfo-node',
+  configName: 'sicashinfo-node',
+  processTitle: 'sicashinfo'
 })
   .on('require', name => {
     console.log('Loading:', name)
@@ -30,14 +30,14 @@ liftoff.launch({cwd: process.cwd}, () => {
   program
     .command('start')
     .description('Start the current node')
-    .option('-c, --config <dir>', 'Specify the directory with Qtuminfo Node configuration')
+    .option('-c, --config <dir>', 'Specify the directory with SICashinfo Node configuration')
     .action(async cmd => {
       let config = require(path.resolve(
         process.cwd(),
         ...cmd.config ? [cmd.config] : [],
-        'qtuminfo-node.json'
+        'sicashinfo-node.json'
       ))
-      let node = new QtumNode({path: process.cwd(), config})
+      let node = new SICashNode({path: process.cwd(), config})
       await node.start()
     })
 
