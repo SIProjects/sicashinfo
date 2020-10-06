@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SICashProjects/sicashinfo.git"
+    "url": "git+https://github.com/SIProjects/sicashinfo.git"
   },
   "keywords": [
     "sicash",
@@ -19,9 +19,9 @@
   "author": "SICASH <foundation@sicash.org>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/SICashProjects/sicashinfo/issues"
+    "url": "https://github.com/SIProjects/sicashinfo/issues"
   },
-  "homepage": "https://github.com/SICashProjects/sicashinfo#readme",
+  "homepage": "https://github.com/SIProjects/sicashinfo#readme",
   "devDependencies": {
     "babel-eslint": "^10.0.3",
     "eslint": "^6.4.0"
