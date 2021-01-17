@@ -5,11 +5,11 @@ const {sql} = require('../utils')
 
 const {ne: $ne, gt: $gt, in: $in} = Sequelize.Op
 
-const totalSupplyABI = Solidity.qrc20ABIs.find(abi => abi.name === 'totalSupply')
-const balanceOfABI = Solidity.qrc20ABIs.find(abi => abi.name === 'balanceOf')
-const ownerOfABI = Solidity.qrc721ABIs.find(abi => abi.name === 'ownerOf')
-const transferABI = Solidity.qrc20ABIs.find(abi => abi.name === 'transfer')
-const TransferABI = Solidity.qrc20ABIs.find(abi => abi.name === 'Transfer')
+const totalSupplyABI = Solidity.src20ABIs.find(abi => abi.name === 'totalSupply')
+const balanceOfABI = Solidity.src20ABIs.find(abi => abi.name === 'balanceOf')
+const ownerOfABI = Solidity.src721ABIs.find(abi => abi.name === 'ownerOf')
+const transferABI = Solidity.src20ABIs.find(abi => abi.name === 'transfer')
+const TransferABI = Solidity.src20ABIs.find(abi => abi.name === 'Transfer')
 
 class ContractService extends Service {
   #tip = null
@@ -22,10 +22,10 @@ class ContractService extends Service {
   #Contract = null
   #ContractCode = null
   #ContractTag = null
-  #QRC20 = null
-  #QRC20Balance = null
-  #QRC721 = null
-  #QRC721Token = null
+  #SRC20 = null
+  #SRC20Balance = null
+  #SRC721 = null
+  #SRC721Token = null
 
   static get dependencies() {
     return ['block', 'db', 'transaction']
@@ -41,10 +41,10 @@ class ContractService extends Service {
     this.#Contract = this.node.getModel('contract')
     this.#ContractCode = this.node.getModel('contract_code')
     this.#ContractTag = this.node.getModel('contract_tag')
-    this.#QRC20 = this.node.getModel('qrc20')
-    this.#QRC20Balance = this.node.getModel('qrc20_balance')
-    this.#QRC721 = this.node.getModel('qrc721')
-    this.#QRC721Token = this.node.getModel('qrc721_token')
+    this.#SRC20 = this.node.getModel('src20')
+    this.#SRC20Balance = this.node.getModel('src20_balance')
+    this.#SRC721 = this.node.getModel('src721')
+    this.#SRC721Token = this.node.getModel('src721_token')
     this.#tip = await this.node.getServiceTip(this.name)
     let blockTip = await this.node.getBlockTip()
     if (this.#tip.height > blockTip.height) {
@@ -106,7 +106,7 @@ class ContractService extends Service {
             ]
           })
           let contract = await this._createContract(address, 'evm')
-          if (contract && contract.type === 'qrc20') {
+          if (contract && contract.type === 'src20') {
             await this._updateBalances(new Set([`${address.toString('hex')}:${owner.data.toString('hex')}`]))
           }
         } else if (output.scriptPubKey.type === OutputScript.EVM_CONTRACT_CREATE_SENDER) {
@@ -123,7 +123,7 @@ class ContractService extends Service {
             chain: this.chain
           })
           let contract = await this._createContract(address, 'evm')
-          if (contract && contract.type === 'qrc20') {
+          if (contract && contract.type === 'src20') {
             await this._updateBalances(new Set([`${address.toString('hex')}:${owner.data.toString('hex')}`]))
           }
         }
@@ -163,7 +163,7 @@ class ContractService extends Service {
       await this._updateBalances(balanceChanges)
     }
     await this.#db.query(sql`
-      INSERT INTO qrc721_token
+      INSERT INTO src721_token
       SELECT log.address AS contract_address, log.topic4 AS token_id, RIGHT(log.topic2, 20) AS holder
       FROM evm_receipt receipt, evm_receipt_log log
       INNER JOIN (
@@ -197,13 +197,13 @@ class ContractService extends Service {
     }
     if (contractsToRemove.length) {
       await this.#db.query(sql`
-        DELETE contract, tag, qrc20, qrc20_balance, qrc721, qrc721_token
+        DELETE contract, tag, src20, src20_balance, src721, src721_token
         FROM contract
         LEFT JOIN contract_tag tag ON tag.contract_address = contract.address
-        LEFT JOIN qrc20 ON qrc20.contract_address = contract.address
-        LEFT JOIN qrc20_balance ON qrc20_balance.contract_address = contract.address
-        LEFT JOIN qrc721 ON qrc721.contract_address = contract.address
-        LEFT JOIN qrc721_token ON qrc721_token.contract_address = contract.address
+        LEFT JOIN src20 ON src20.contract_address = contract.address
+        LEFT JOIN src20_balance ON src20_balance.contract_address = contract.address
+        LEFT JOIN src721 ON src721.contract_address = contract.address
+        LEFT JOIN src721_token ON src721_token.contract_address = contract.address
         WHERE contract.address IN ${contractsToRemove}
       `)
     }
@@ -234,11 +234,11 @@ class ContractService extends Service {
       vm,
       bytecodeSha256sum: sha256sum
     })
-    if (isQRC721(code)) {
+    if (isSRC721(code)) {
       let [nameResult, symbolResult, totalSupplyResult] = await this._batchCallMethods([
-        {address, abi: Solidity.qrc721ABIs.find(abi => abi.name === 'name')},
-        {address, abi: Solidity.qrc721ABIs.find(abi => abi.name === 'symbol')},
-        {address, abi: Solidity.qrc721ABIs.find(abi => abi.name === 'totalSupply')}
+        {address, abi: Solidity.src721ABIs.find(abi => abi.name === 'name')},
+        {address, abi: Solidity.src721ABIs.find(abi => abi.name === 'symbol')},
+        {address, abi: Solidity.src721ABIs.find(abi => abi.name === 'totalSupply')}
       ])
       try {
         let [name, symbol, totalSupply] = await Promise.all([
@@ -246,11 +246,11 @@ class ContractService extends Service {
           symbolResult.then(x => x[0]),
           totalSupplyResult.then(x => BigInt(x[0].toString()))
         ])
-        contract.type = 'qrc721'
+        contract.type = 'src721'
         await contract.save()
         await this.#ContractCode.bulkCreate([{sha256sum, code}], {ignoreDuplicates: true})
-        await this.#ContractTag.create({contractAddress: address, tag: 'qrc721'})
-        await this.#QRC721.create({
+        await this.#ContractTag.create({contractAddress: address, tag: 'src721'})
+        await this.#SRC721.create({
           contractAddress: address,
           name,
           symbol,
@@ -259,15 +259,15 @@ class ContractService extends Service {
       } catch (err) {
         await contract.save()
       }
-    } else if (isQRC20(code)) {
+    } else if (isSRC20(code)) {
       let [
         nameResult, symbolResult, decimalsResult, totalSupplyResult, versionResult
       ] = await this._batchCallMethods([
-        {address, abi: Solidity.qrc20ABIs.find(abi => abi.name === 'name')},
-        {address, abi: Solidity.qrc20ABIs.find(abi => abi.name === 'symbol')},
-        {address, abi: Solidity.qrc20ABIs.find(abi => abi.name === 'decimals')},
-        {address, abi: Solidity.qrc20ABIs.find(abi => abi.name === 'totalSupply')},
-        {address, abi: Solidity.qrc20ABIs.find(abi => abi.name === 'version')}
+        {address, abi: Solidity.src20ABIs.find(abi => abi.name === 'name')},
+        {address, abi: Solidity.src20ABIs.find(abi => abi.name === 'symbol')},
+        {address, abi: Solidity.src20ABIs.find(abi => abi.name === 'decimals')},
+        {address, abi: Solidity.src20ABIs.find(abi => abi.name === 'totalSupply')},
+        {address, abi: Solidity.src20ABIs.find(abi => abi.name === 'version')}
       ])
       try {
         let version
@@ -280,11 +280,11 @@ class ContractService extends Service {
           decimalsResult.then(x => x[0].toString()),
           totalSupplyResult.then(x => BigInt(x[0].toString()))
         ])
-        contract.type = 'qrc20'
+        contract.type = 'src20'
         await contract.save()
         await this.#ContractCode.bulkCreate([{sha256sum, code}], {ignoreDuplicates: true})
-        await this.#ContractTag.create({contractAddress: address, tag: 'qrc20'})
-        await this.#QRC20.create({
+        await this.#ContractTag.create({contractAddress: address, tag: 'src20'})
+        await this.#SRC20.create({
           contractAddress: address,
           name,
           symbol,
@@ -377,7 +377,7 @@ class ContractService extends Service {
       let contract = await this.#Contract.findOne({
         where: {
           address,
-          type: {[$in]: ['qrc20', 'qrc721']}
+          type: {[$in]: ['src20', 'src721']}
         }
       })
       if (contract) {
@@ -387,10 +387,10 @@ class ContractService extends Service {
         } catch (err) {
           continue
         }
-        if (contract.type === 'qrc20') {
-          await this.#QRC20.update({totalSupply}, {where: {contractAddress: address}})
+        if (contract.type === 'src20') {
+          await this.#SRC20.update({totalSupply}, {where: {contractAddress: address}})
         } else {
-          await this.#QRC721.update({totalSupply}, {where: {contractAddress: address}})
+          await this.#SRC721.update({totalSupply}, {where: {contractAddress: address}})
         }
       }
     }
@@ -421,7 +421,7 @@ class ContractService extends Service {
     )
     operations = operations.filter(Boolean)
     if (operations.length) {
-      await this.#QRC20Balance.bulkCreate(operations, {updateOnDuplicate: ['balance'], validate: false})
+      await this.#SRC20Balance.bulkCreate(operations, {updateOnDuplicate: ['balance'], validate: false})
     }
   }
 
@@ -435,17 +435,17 @@ class ContractService extends Service {
         holder
       })
     }
-    await this.#QRC721Token.bulkCreate(operations, {updateOnDuplicate: ['holder'], validate: false})
+    await this.#SRC721Token.bulkCreate(operations, {updateOnDuplicate: ['holder'], validate: false})
   }
 }
 
-function isQRC20(code) {
+function isSRC20(code) {
   return code.includes(balanceOfABI.id)
     && code.includes(transferABI.id)
     && code.includes(TransferABI.id)
 }
 
-function isQRC721(code) {
+function isSRC721(code) {
   return code.includes(balanceOfABI.id)
     && code.includes(ownerOfABI.id)
     && code.includes(TransferABI.id)

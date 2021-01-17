@@ -1,7 +1,7 @@
 const Sequelize = require('sequelize')
 
 function generate(sequelize) {
-  let QRC20 = sequelize.define('qrc20', {
+  let SRC20 = sequelize.define('src20', {
     contractAddress: {
       type: Sequelize.CHAR(20).BINARY,
       primaryKey: true
@@ -30,7 +30,7 @@ function generate(sequelize) {
     }
   }, {freezeTableName: true, underscored: true, timestamps: false})
 
-  let QRC20Balance = sequelize.define('qrc20_balance', {
+  let SRC20Balance = sequelize.define('src20_balance', {
     contractAddress: {
       type: Sequelize.CHAR(20).BINARY,
       primaryKey: true
@@ -56,7 +56,7 @@ function generate(sequelize) {
     }
   }, {freezeTableName: true, underscored: true, timestamps: false})
 
-  let Qrc721 = sequelize.define('qrc721', {
+  let Src721 = sequelize.define('src721', {
     contractAddress: {
       type: Sequelize.CHAR(20).BINARY,
       primaryKey: true
@@ -80,7 +80,7 @@ function generate(sequelize) {
     }
   }, {freezeTableName: true, underscored: true, timestamps: false})
 
-  let QRC721Token = sequelize.define('qrc721_token', {
+  let SRC721Token = sequelize.define('src721_token', {
     contractAddress: {
       type: Sequelize.CHAR(20).BINARY,
       primaryKey: true
@@ -92,14 +92,14 @@ function generate(sequelize) {
     holder: Sequelize.CHAR(20).BINARY
   }, {freezeTableName: true, underscored: true, timestamps: false})
 
-  sequelize.models.contract.hasOne(QRC20, {as: 'qrc20', foreignKey: 'contractAddress'})
-  QRC20.belongsTo(sequelize.models.contract, {as: 'contract', foreignKey: 'contractAddress'})
-  sequelize.models.contract.hasMany(QRC20Balance, {as: 'qrc20Balances', foreignKey: 'contractAddress'})
-  QRC20Balance.belongsTo(sequelize.models.contract, {as: 'contract', foreignKey: 'contractAddress'})
-  sequelize.models.contract.hasOne(Qrc721, {as: 'qrc721', foreignKey: 'contractAddress'})
-  Qrc721.belongsTo(sequelize.models.contract, {as: 'contract', foreignKey: 'contractAddress'})
-  sequelize.models.contract.hasMany(QRC721Token, {as: 'qrc721Tokens', foreignKey: 'contractAddress'})
-  QRC721Token.belongsTo(sequelize.models.contract, {as: 'contract', foreignKey: 'contractAddress'})
+  sequelize.models.contract.hasOne(SRC20, {as: 'src20', foreignKey: 'contractAddress'})
+  SRC20.belongsTo(sequelize.models.contract, {as: 'contract', foreignKey: 'contractAddress'})
+  sequelize.models.contract.hasMany(SRC20Balance, {as: 'src20Balances', foreignKey: 'contractAddress'})
+  SRC20Balance.belongsTo(sequelize.models.contract, {as: 'contract', foreignKey: 'contractAddress'})
+  sequelize.models.contract.hasOne(Src721, {as: 'src721', foreignKey: 'contractAddress'})
+  Src721.belongsTo(sequelize.models.contract, {as: 'contract', foreignKey: 'contractAddress'})
+  sequelize.models.contract.hasMany(SRC721Token, {as: 'src721Tokens', foreignKey: 'contractAddress'})
+  SRC721Token.belongsTo(sequelize.models.contract, {as: 'contract', foreignKey: 'contractAddress'})
 }
 
 module.exports = generate

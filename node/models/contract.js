@@ -13,7 +13,7 @@ function generate(sequelize) {
     },
     type: {
       type: Sequelize.ENUM,
-      values: ['dgp', 'qrc20', 'qrc721'],
+      values: ['dgp', 'src20', 'src721'],
       allowNull: true
     },
     bytecodeSha256sum: Sequelize.CHAR(32).BINARY,
